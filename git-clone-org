@@ -1,0 +1,114 @@
+#!/bin/bash
+
+set -e
+
+usage()
+{
+  echo "git clone-org -o ORG [-t TOPIC] [-p PATH] [-y]"
+  echo "  -o, --org ORG"
+  echo "    Github organization. Required if GITHUB_ORG is not set."
+  echo "  -y, --yes"
+  echo "    Clone without prompting for confirmation."
+  echo "  -p, --path PATH"
+  echo "    Clone path. Default: current directory."
+  echo "  -t, --topic TOPIC"
+  echo "    Clone repositories with this topic"
+  echo "  -h, --help"
+  echo "    Display this message."
+}
+
+check_dependency()
+{
+  set +e
+  which "$1" > /dev/null 2>&1
+  if [ "$?" != 0 ]; then
+    set -e
+    echo "Missing required dependency: '$1'"
+    exit 1
+  else
+    set -e
+  fi
+}
+
+check_dependency "jq"
+check_dependency "gh"
+
+while [ "$1" != "" ]
+do
+  case $1 in
+    -o | --org ) shift
+      GITHUB_ORG="$1"
+      ;;
+    -t | --topic ) shift
+      CLONE_TOPIC="$1"
+      ;;
+    -y | --yes ) ACCEPT_PROMPT="true"
+      ;;
+    -p | --path ) shift
+      CLONE_PATH="$1"
+      ;;
+    -h | --help ) usage
+      exit
+      ;;
+    * ) usage
+      exit 1
+  esac
+  shift
+done
+
+if [ -z "$GITHUB_ORG" ]
+then
+  echo "Github organization is required"
+  usage
+  exit 1
+fi
+
+if [ -n "$CLONE_PATH" ]
+then
+  cd "$CLONE_PATH"
+fi
+
+if [ -n "$CLONE_TOPIC" ]
+then
+  echo "Retrieving the list of repositories in $GITHUB_ORG with topic $CLONE_TOPIC..."
+  REPOS=$(gh api --paginate "search/repositories?q=org:$GITHUB_ORG%20topic:$CLONE_TOPIC" | jq -r '.items[].full_name')
+else
+  echo "Retrieving the list of repositories in $GITHUB_ORG..."
+  REPOS=$(gh api --paginate "orgs/$GITHUB_ORG/repos" | jq -r '.[].full_name')
+fi
+
+if [ -z "$REPOS" ]
+then
+  echo "No repositories found"
+  exit 1
+fi
+
+COUNT=$(echo "$REPOS" | wc -l)
+
+if [ "$ACCEPT_PROMPT" != "true" ]
+then
+  VALID="false"
+  echo "Cloning $COUNT repositories to $(pwd). Continue? Anything other than 'y' or 'l' will terminate"
+  while [ "$VALID" = "false" ]
+  do
+    read -p "[ (y)es | (l)ist ]> " YESNO
+    if [ "$YESNO" = "l" ]
+    then
+      echo "$REPOS"
+    elif [ "$YESNO" = "y" ]
+    then
+      VALID="true"
+    else
+      exit 1
+    fi
+  done
+else
+  echo "Cloning $COUNT repositories to $(pwd)..."
+fi
+
+set +e
+for repo in $REPOS
+do
+  gh repo clone "$repo"
+done
+
