@@ -9,7 +9,7 @@
 
 ## Installation
 
-Copy the script to your path and invoke with `git clone-org`.
+Run `install.sh` as root then invoke with `git clone-org`.
 
 ```txt
 git clone-org -o ORG [-t TOPIC] [-p PATH] [-y]
