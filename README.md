@@ -1,6 +1,6 @@
 # git-clone-org
 
-> A github-cli extension script to clone all repositories in an organization, optionally filtering by topic
+A github-cli extension script to clone all repositories in an organization, optionally filtering by topic. If the repository has already been cloned it will attempt to switch to the default branch and pull.
 
 ## Installation
 

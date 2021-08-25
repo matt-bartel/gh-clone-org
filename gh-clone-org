@@ -4,7 +4,7 @@ set -e
 
 usage()
 {
-  echo "git clone-org -o ORG [-t TOPIC] [-p PATH] [-y]"
+  echo "gh clone-org -o ORG [-t TOPIC] [-p PATH] [-y]"
   echo "  -o, --org ORG"
   echo "    Github organization. Required if the GITHUB_ORG environment variable is not set."
   echo "  -y, --yes"
@@ -106,4 +106,3 @@ do
     gh repo clone "$repo"
   fi
 done
-
