@@ -1,20 +1,19 @@
 # git-clone-org
 
-> A script to clone all repositories in a Github organization optionally filtering by topic
-
-## Dependencies
-
-* jq
-* [Github cli](https://cli.github.com/)
+> A github-cli extension script to clone all repositories in an organization, optionally filtering by topic
 
 ## Installation
 
-Run `install.sh` as root then invoke with `git clone-org`.
+```bash
+gh extension install matt-bartel/gh-clone-org
+```
+
+## Usage
 
 ```txt
-git clone-org -o ORG [-t TOPIC] [-p PATH] [-y]
+gh clone-org -o ORG [-t TOPIC] [-p PATH] [-y]
   -o, --org ORG
-    Github organization. Required if GITHUB_ORG is not set.
+    Github organization. Required if the GITHUB_ORG environment variable is not set.
   -y, --yes
     Clone without prompting for confirmation.
   -p, --path PATH

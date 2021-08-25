@@ -6,7 +6,7 @@ usage()
 {
   echo "git clone-org -o ORG [-t TOPIC] [-p PATH] [-y]"
   echo "  -o, --org ORG"
-  echo "    Github organization. Required if GITHUB_ORG is not set."
+  echo "    Github organization. Required if the GITHUB_ORG environment variable is not set."
   echo "  -y, --yes"
   echo "    Clone without prompting for confirmation."
   echo "  -p, --path PATH"
@@ -16,22 +16,6 @@ usage()
   echo "  -h, --help"
   echo "    Display this message."
 }
-
-check_dependency()
-{
-  set +e
-  which "$1" > /dev/null 2>&1
-  if [ "$?" != 0 ]; then
-    set -e
-    echo "Missing required dependency: '$1'"
-    exit 1
-  else
-    set -e
-  fi
-}
-
-check_dependency "jq"
-check_dependency "gh"
 
 while [ "$1" != "" ]
 do
@@ -65,16 +49,17 @@ fi
 
 if [ -n "$CLONE_PATH" ]
 then
+  mkdir -p "$CLONE_PATH"
   cd "$CLONE_PATH"
 fi
 
 if [ -n "$CLONE_TOPIC" ]
 then
   echo "Retrieving the list of repositories in $GITHUB_ORG with topic $CLONE_TOPIC..."
-  REPOS=$(gh api --paginate "search/repositories?q=org:$GITHUB_ORG%20topic:$CLONE_TOPIC" | jq -r '.items[].full_name')
+  REPOS=$(gh api --paginate "search/repositories?q=org:$GITHUB_ORG%20topic:$CLONE_TOPIC" -q '.items[].full_name')
 else
   echo "Retrieving the list of repositories in $GITHUB_ORG..."
-  REPOS=$(gh api --paginate "orgs/$GITHUB_ORG/repos" | jq -r '.[].full_name')
+  REPOS=$(gh api --paginate "orgs/$GITHUB_ORG/repos" -q '.[].full_name')
 fi
 
 if [ -z "$REPOS" ]
@@ -109,6 +94,16 @@ fi
 set +e
 for repo in $REPOS
 do
-  gh repo clone "$repo"
+  d=${repo#$GITHUB_ORG/}
+  if [ -d "$d" ]
+  then
+    echo "'$d' already exists, attempting to checkout the default branch and pull"
+    cd "$d"
+    default_branch="$(gh api "repos/$repo" -q '.default_branch')"
+    git checkout "$default_branch" && git pull
+    cd ..
+  else
+    gh repo clone "$repo"
+  fi
 done
 
