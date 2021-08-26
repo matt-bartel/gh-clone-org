@@ -11,8 +11,8 @@ gh extension install matt-bartel/gh-clone-org
 ## Usage
 
 ```txt
-gh clone-org -o ORG [-t TOPIC] [-p PATH] [-y]
-  -o, --org ORG
+gh clone-org [-t TOPIC] [-p PATH] [-y] ORG
+  ORG
     Github organization. Required if the GITHUB_ORG environment variable is not set.
   -y, --yes
     Clone without prompting for confirmation.

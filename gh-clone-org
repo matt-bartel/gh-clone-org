@@ -4,8 +4,8 @@ set -e
 
 usage()
 {
-  echo "gh clone-org -o ORG [-t TOPIC] [-p PATH] [-y]"
-  echo "  -o, --org ORG"
+  echo "gh clone-org [-t TOPIC] [-p PATH] [-y] ORG"
+  echo "  ORG"
   echo "    Github organization. Required if the GITHUB_ORG environment variable is not set."
   echo "  -y, --yes"
   echo "    Clone without prompting for confirmation."
@@ -34,8 +34,8 @@ do
     -h | --help ) usage
       exit
       ;;
-    * ) usage
-      exit 1
+    * ) GITHUB_ORG="$1"
+      ;;
   esac
   shift
 done
