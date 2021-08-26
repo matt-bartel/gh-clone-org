@@ -4,7 +4,7 @@ set -e
 
 usage()
 {
-  echo "gh clone-org [-t TOPIC] [-p PATH] [-y] ORG"
+  echo "gh clone-org [-t TOPIC] [-s QUERY] [-p PATH] [-y] ORG"
   echo "  ORG"
   echo "    Github organization. Required if the GITHUB_ORG environment variable is not set."
   echo "  -y, --yes"
@@ -13,8 +13,31 @@ usage()
   echo "    Clone path. Default: current directory."
   echo "  -t, --topic TOPIC"
   echo "    Clone repositories with this topic"
+  echo "  -s --search QUERY"
+  echo "    Clone repositories found by this search string. If this is provided '-t' will be ignored."
+  echo "    Example: -s \"is:public language:go\""
+  echo "    See: https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-for-repositories"
   echo "  -h, --help"
   echo "    Display this message."
+}
+
+# https://gist.github.com/cdown/1163649
+urlencode() {
+  # urlencode <string>
+
+  old_lc_collate=$LC_COLLATE
+  LC_COLLATE=C
+
+  local length="${#1}"
+  for (( i = 0; i < length; i++ )); do
+    local c="${1:$i:1}"
+    case $c in
+      [a-zA-Z0-9.~_-]) printf '%s' "$c" ;;
+      *) printf '%%%02X' "'$c" ;;
+    esac
+  done
+
+  LC_COLLATE=$old_lc_collate
 }
 
 while [ "$1" != "" ]
@@ -30,6 +53,9 @@ do
       ;;
     -p | --path ) shift
       CLONE_PATH="$1"
+      ;;
+    -s | --search ) shift
+      SEARCH="$1"
       ;;
     -h | --help ) usage
       exit
@@ -47,20 +73,28 @@ then
   exit 1
 fi
 
-if [ -n "$CLONE_PATH" ]
+JQ_QUERY='.items[].full_name'
+QUERY="search/repositories?q=org%3A$GITHUB_ORG"
+if [ -n "$SEARCH" ]
 then
-  mkdir -p "$CLONE_PATH"
-  cd "$CLONE_PATH"
+  QUERY="$QUERY%20$(urlencode "$SEARCH")"
+elif [ -n "$CLONE_TOPIC" ]
+then
+  QUERY="$QUERY%20topic:$CLONE_TOPIC"
+else
+  # The search api only returns up to 1000 items. If no additional search params are provided we should
+  # use the orgs or users apis so we can get everything.
+  JQ_QUERY='.[].full_name'
+  if [ "$(gh api "users/$GITHUB_ORG" -q '.type')" = "Organization" ]
+  then
+    QUERY="orgs/$GITHUB_ORG/repos"
+  else
+    QUERY="users/$GITHUB_ORG/repos"
+  fi
 fi
 
-if [ -n "$CLONE_TOPIC" ]
-then
-  echo "Retrieving the list of repositories in $GITHUB_ORG with topic $CLONE_TOPIC..."
-  REPOS=$(gh api --paginate "search/repositories?q=org:$GITHUB_ORG%20topic:$CLONE_TOPIC" -q '.items[].full_name')
-else
-  echo "Retrieving the list of repositories in $GITHUB_ORG..."
-  REPOS=$(gh api --paginate "orgs/$GITHUB_ORG/repos" -q '.[].full_name')
-fi
+echo "Retrieving the list of repositories: $QUERY"
+REPOS=$(gh api --paginate "$QUERY" -q "$JQ_QUERY")
 
 if [ -z "$REPOS" ]
 then
@@ -70,10 +104,15 @@ fi
 
 COUNT=$(echo "$REPOS" | wc -l)
 
+if [ -z "$CLONE_PATH" ]
+then
+  CLONE_PATH="$(pwd)";
+fi
+
 if [ "$ACCEPT_PROMPT" != "true" ]
 then
   VALID="false"
-  echo "Cloning $COUNT repositories to $(pwd). Continue? Anything other than 'y' or 'l' will terminate"
+  echo "Cloning $COUNT repositories to $CLONE_PATH. Continue? Anything other than 'y' or 'l' will terminate"
   while [ "$VALID" = "false" ]
   do
     read -p "[ (y)es | (l)ist ]> " YESNO
@@ -90,6 +129,9 @@ then
 else
   echo "Cloning $COUNT repositories to $(pwd)..."
 fi
+
+mkdir -p "$CLONE_PATH"
+cd "$CLONE_PATH"
 
 set +e
 for repo in $REPOS
