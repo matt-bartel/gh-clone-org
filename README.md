@@ -24,6 +24,8 @@ gh clone-org [-t TOPIC] [-s QUERY] [-p PATH] [-y] ORG
     Clone repositories found by this search string. If this is provided '-t' will be ignored.
     Example: -s "is:public language:go"
     See: https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-for-repositories
+  -n, --dry-run
+    Do not actually clone, just show what would be cloned
   -h, --help
     Display this message.
 ```

@@ -17,6 +17,8 @@ usage()
   echo "    Clone repositories found by this search string. If this is provided '-t' will be ignored."
   echo "    Example: -s \"is:public language:go\""
   echo "    See: https://docs.github.com/en/github/searching-for-information-on-github/searching-on-github/searching-for-repositories"
+  echo "  -n, --dry-run"
+  echo "    Do not actually clone, just show what would be cloned"
   echo "  -h, --help"
   echo "    Display this message."
 }
@@ -56,6 +58,8 @@ do
       ;;
     -s | --search ) shift
       SEARCH="$1"
+      ;;
+    -n | --dry-run) DRY_RUN="true"
       ;;
     -h | --help ) usage
       exit
@@ -102,11 +106,18 @@ then
   exit 1
 fi
 
-COUNT=$(echo "$REPOS" | wc -l)
+COUNT=$(echo "$REPOS" | wc -l | tr -d ' ')
 
 if [ -z "$CLONE_PATH" ]
 then
   CLONE_PATH="$(pwd)";
+fi
+
+if [ "$DRY_RUN" == "true" ]
+then
+  echo "This would have cloned the following $COUNT repositories to $CLONE_PATH:"
+  echo "$REPOS"
+  exit 0
 fi
 
 if [ "$ACCEPT_PROMPT" != "true" ]
@@ -127,7 +138,7 @@ then
     fi
   done
 else
-  echo "Cloning $COUNT repositories to $(pwd)..."
+  echo "Cloning $COUNT repositories to $CLONE_PATH..."
 fi
 
 mkdir -p "$CLONE_PATH"
