@@ -1,4 +1,4 @@
-# git-clone-org
+# gh-clone-org
 
 A github-cli extension script to clone all repositories in an organization, optionally filtering by topic or a search string. If the repository has already been cloned it will attempt to switch to the default branch and pull.
 
