@@ -147,7 +147,7 @@ cd "$CLONE_PATH"
 set +e
 for repo in $REPOS
 do
-  d=${repo#$GITHUB_ORG/}
+  d=${repo#*/}
   if [ -d "$d" ]
   then
     echo "'$d' already exists, attempting to checkout the default branch and pull"
