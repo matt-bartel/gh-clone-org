@@ -7,6 +7,8 @@ usage()
   echo "gh clone-org [-t TOPIC] [-s QUERY] [-p PATH] [-y] ORG"
   echo "  ORG"
   echo "    Github organization. Required if the GITHUB_ORG environment variable is not set."
+  echo "  -a, --archived"
+  echo "    Clone archived repositories"
   echo "  -y, --yes"
   echo "    Clone without prompting for confirmation."
   echo "  -p, --path PATH"
@@ -45,6 +47,8 @@ urlencode() {
 while [ "$1" != "" ]
 do
   case $1 in
+    -a | --archived ) ARCHIVED="true"
+      ;;
     -o | --org ) shift
       GITHUB_ORG="$1"
       ;;
@@ -85,6 +89,9 @@ then
 elif [ -n "$CLONE_TOPIC" ]
 then
   QUERY="$QUERY%20topic:$CLONE_TOPIC"
+elif [ "$ARCHIVED" != "true" ]
+then
+  QUERY="$QUERY%20archived:false"
 else
   # The search api only returns up to 1000 items. If no additional search params are provided we should
   # use the orgs or users apis so we can get everything.
